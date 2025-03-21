@@ -15,7 +15,27 @@ pub fn main() !void {
     const buf: []u8 = try file.readToEndAlloc(std.heap.page_allocator, stat.size);
     defer std.heap.page_allocator.free(buf);
 
-    std.debug.print("{s}", .{buf});
+    const labyrinth = load_labyrinth(std.heap.page_allocator, buf);
+    defer labyrinth.deinit();
+
+    const opt_path = try is_labyrinth_valid(labyrinth);
+
+    if (opt_path) |path| {
+        std.debug.print("Labyrinth is valid\n", .{});
+        for (labyrinth.items, 0..) |line, y| {
+            for (line, 0..) |cell, x| {
+                if (in_path(path, Position{ .x = x, .y = y })) {
+                    std.debug.print(".", .{});
+                } else {
+                    std.debug.print("{c}", .{cell});
+                }
+            }
+            std.debug.print("\n", .{});
+        }
+    } else {
+        std.debug.print("Labyrinth is invalid\n", .{});
+        std.debug.print("{s}", .{buf});
+    }
 }
 
 pub fn load_labyrinth(allocator: std.mem.Allocator, input: []const u8) std.ArrayList([]const u8) {
